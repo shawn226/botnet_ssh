@@ -1,2 +1,0 @@
-Host : 10.33.1.24 port : 22
-User : root Password : superyouss
