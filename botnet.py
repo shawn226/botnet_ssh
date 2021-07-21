@@ -12,6 +12,7 @@ init(autoreset=True)
 # Brute force SSH
 Found = False
 Fails = 0
+os = "Unknow"
 
 ssh_info = None
 
@@ -19,6 +20,14 @@ ssh_info = None
 export_file = None
 
 # FONCTIONS
+def detect_os(host):
+    global os
+
+    nm = nmap.PortScanner()
+    nm.scan(host, arguments="-O --osscan-guess")
+    os = nm[host]['osmatch'][0]['name']
+
+
 def verif_file(filename):
     """Verifies if the argument is an acceptable name and with a good extension"""
     splited_filename = filename.split('.')
@@ -122,7 +131,9 @@ def nmapScan(tgtHost, tgtPort):
 
 def main():
     """Main fonction"""
-    global ssh_info 
+    global ssh_info
+    global os
+
     prog = path.basename(argv[0]) # Get program name
 
     usage = f"[Usage]: {prog} -H <target host> -p <target port>"
@@ -152,6 +163,8 @@ def main():
         print(parser.usage)
         exit(0)
 
+    detect_os(tgtHost)
+
     # Check if it's ranged port
     if '-' in options.tgtPort and options.tgtPort != None:
         range_list = options.tgtPort.split('-')
@@ -161,9 +174,10 @@ def main():
         tgtPorts = ports.split(',')
     else:
         tgtPorts = str(options.tgtPort).split(',')
-
+    
     print('-'*100)
     print(f'Host : {tgtHost}')
+    print(f'Os : {os}')
     print("Port(s) : ", end="")
     print(*tgtPorts, sep=', ')
     for port in tgtPorts:
