@@ -31,7 +31,7 @@ def get_host_ip():
     return host_ip
     
 def persist_shell_linux(host):
-    """This fonction set a reverseshell on port 4444 whit crontab on a linux based system"""
+    """This fonction sets a reverseshell on port 4444 with crontab on a linux based system"""
     global ssh_info
     
     try:
